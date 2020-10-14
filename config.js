@@ -10,4 +10,4 @@ const GENESIS_DATA = {
   data: []
 };
 
-module.exports = { GENESIS_DATA, MINE_RATE};
+module.exports = { GENESIS_DATA, MINE_RATE };
