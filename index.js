@@ -1,27 +1,19 @@
 const express = require('express');
 const request = require('request');
 const bodyParser = require('body-parser');
-<<<<<<< HEAD
-=======
 const path = require('path');
->>>>>>> 14d4714 (UI added)
 const Blockchain = require('./blockchain');
 const PubSub = require('./app/pubsub');
 const TransactionPool = require('./wallet/transaction-pool');
 const Wallet = require('./wallet');
 const Transaction = require('./wallet/transaction');
 const TransactionMiner = require('./app/transaction-miner');
-<<<<<<< HEAD
-
-const app = express();
-=======
 const cors = require('cors')
 
-const isDevelopment = process.env.Env === 'development';
+const isDevelopment = process.env.ENV === 'development';
 
 const app = express();
 app.use(cors());
->>>>>>> 14d4714 (UI added)
 const blockchain = new Blockchain();
 const transactionPool = new TransactionPool();
 const wallet = new Wallet();
@@ -31,12 +23,8 @@ const transactionMiner = new TransactionMiner({ blockchain, transactionPool, wal
 const DEFAULT_PORT = 3000;
 const ROOT_NODE_ADDRESS = `http://localhost:${DEFAULT_PORT}`;
 
-
 app.use(bodyParser.json());
-<<<<<<< HEAD
-=======
 app.use(express.static(path.join(__dirname, 'client/dist')));
->>>>>>> 14d4714 (UI added)
 
 app.get('/api/blocks', (req, res) => {
   res.json(blockchain.chain);
@@ -67,7 +55,6 @@ app.post('/api/transact', (req, res) => {
   }
 
   transactionPool.setTransaction(transaction);
-  //console.log('transactionPool', transactionPool);
 
   pubsub.broadcastTransaction(transaction);
 
@@ -93,13 +80,10 @@ app.get('/api/wallet-info',(req, res) => {
   });
 });
 
-<<<<<<< HEAD
-=======
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname,'client/dist/index.html'));
 });
 
->>>>>>> 14d4714 (UI added)
 const syncWithRootState = () => {
   request({ url: `${ROOT_NODE_ADDRESS}/api/blocks` }, (error, response, body) => {
     if (!error && response.statusCode === 200) {
@@ -120,8 +104,6 @@ const syncWithRootState = () => {
   });
 };
 
-<<<<<<< HEAD
-=======
 if (isDevelopment) {
   const walletFoo = new Wallet();
   const walletBar = new Wallet();
@@ -161,19 +143,12 @@ if (isDevelopment) {
   }
 }
 
-
-
->>>>>>> 14d4714 (UI added)
 let PEER_PORT;
 
 if (process.env.GENERATE_PEER_PORT === 'true') {
   PEER_PORT = DEFAULT_PORT + Math.ceil(Math.random() * 1000);
 }
-<<<<<<< HEAD
-const PORT = PEER_PORT || DEFAULT_PORT;
-=======
 const PORT = process.env.PORT || PEER_PORT || DEFAULT_PORT;
->>>>>>> 14d4714 (UI added)
 app.listen(PORT, () => {
   console.log(`Listening at localhost:${PORT}`);
 
