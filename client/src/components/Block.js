@@ -1,73 +1,57 @@
-import React, { Component } from 'react';
-import { Button } from 'react-bootstrap';
+import React, { useState } from 'react';
 import Transaction from './Transaction.js';
 
-class Block extends Component {
-    state = { displayTransaction: false };
+const Block = ({ block }) => {
+    const [displayTransaction, setDisplayTransaction] = useState(false);
 
-    toggleTransaction = () => {
-        this.setState({ displayTransaction: !this.state.displayTransaction })
+    const toggleTransaction = () => {
+        setDisplayTransaction(!displayTransaction);
     }
 
-    get displayTransaction() {
-        const { data } = this.props.block;
-        const stringifiedData = JSON.stringify(data);
+    const { timestamp, hash, data } = block;
 
-        const dataDisplay = stringifiedData.length > 35 ? 
+    const hashDisplay = `${hash.substring(0, 15)}...`;
+    const stringifiedData = JSON.stringify(data);
+
+    const dataDisplay = stringifiedData.length > 35 ?
         `${stringifiedData.substring(0, 35)}...` : 
         stringifiedData;
 
-        if (this.state.displayTransaction) {
-            return(
+    return (
+        <div className='border border-white p-5 m-5 bg-[#333] rounded shadow-lg text-left'>
+            <div className="mb-2"><span className="font-bold text-gray-400">Hash:</span> {hashDisplay}</div>
+            <div className="mb-2"><span className="font-bold text-gray-400">Timestamp:</span> {new Date(timestamp).toLocaleString()}</div>
+
+            {displayTransaction ? (
                 <div>
+                    <div className="font-bold text-gray-400 mb-1">Data:</div>
                     {
                         data.map(transaction => (
-                            <div key={transaction.id}>
-                                <hr />
+                            <div key={transaction.id} className="border-t border-gray-600 mt-2">
                                 <Transaction transaction={transaction} />
                             </div>
                         ))
                     }
-                    <br />
-                    <Button
-                        bsStyle="danger"
-                        bsSize="small"
-                        onClick={this.toggleTransaction}
+                    <button
+                        className="mt-4 px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm transition-colors"
+                        onClick={toggleTransaction}
                     >
-                    Show Less
-                    </Button>
+                        Show Less
+                    </button>
                 </div>
-            )
-        }
-
-        return (
-            <div>
-                Data: {dataDisplay}
-                <Button
-                    bsStyle="danger"
-                    bsSize="small"
-                    onClick={this.toggleTransaction}
-                >
-                    Show More
-                </Button>
-            </div>
-        );
-    }
-
-    render() {
-        const { timestamp, hash } = this.props.block;
-
-        const hashDisplay = `${hash.substring(0, 15)}...`;
-        
-
-        return(
-            <div className='Block'>
-                <div>Hash: {hashDisplay}</div>
-                <div>Timestamp: {new Date(timestamp).toLocaleString()}</div>
-                {this.displayTransaction}
-            </div>
-        )
-    }
+            ) : (
+                <div className="flex items-center gap-2">
+                    <span className="font-bold text-gray-400">Data:</span> {dataDisplay}
+                    <button
+                        className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm transition-colors"
+                        onClick={toggleTransaction}
+                    >
+                        Show More
+                    </button>
+                </div>
+            )}
+        </div>
+    );
 }
 
 export default Block;

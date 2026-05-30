@@ -1,70 +1,69 @@
-import React, { Component } from 'react';
-import { Button } from 'react-bootstrap'; 
+import React, { useState, useEffect } from 'react';
 import Transaction from './Transaction.js';
-import {Link} from 'react-router-dom';
-import history from '../history.js';
+import { Link, useNavigate } from 'react-router-dom';
 
 const POLL_INTERVAL_MS = 10000;
 
-class TransactionPool extends Component {
-    state = { transactionPoolMap: {} };
+const TransactionPool = () => {
+    const [transactionPoolMap, setTransactionPoolMap] = useState({});
+    const navigate = useNavigate();
 
-    fetchTransactionPoolMap = () => {
+    const fetchTransactionPoolMap = () => {
         fetch(`${document.location.origin}/api/transaction-pool-map`)
-        .then(response => response.json())
-        .then(json => this.setState({ transactionPoolMap: json }))
+            .then(response => response.json())
+            .then(json => setTransactionPoolMap(json));
     }
 
-    fetchMineTransactions = () => {
+    const fetchMineTransactions = () => {
         fetch(`${document.location.origin}/api/mine-transactions`)
             .then(response => {
                 if (response.status === 200) {
                     alert('success');
-                    history.push('/blocks');
+                    navigate('/blocks');
                 } else {
                     alert('The mine-transactions block request did not complete.');
                 }
-            })
+            });
     }
 
-    componentDidMount() {
-        this.fetchTransactionPoolMap();
+    useEffect(() => {
+        fetchTransactionPoolMap();
 
-        this.fetchPoolmapInterval = setInterval(
-            () => this.fetchTransactionPoolMap, 
-            POLL_INTERVAL_MS
-        );
-    }
+        const intervalId = setInterval(fetchTransactionPoolMap, POLL_INTERVAL_MS);
 
-    componentWillUnmount() {
-        clearInterval(this.fetchPoolmapInterval);
-    }
+        return () => clearInterval(intervalId);
+    }, []);
 
-    render() {
-        return(
-            <div className='TransactionPool'>
-                <div><Link to='/'>Home</Link></div>
-                <h3>Transaction Pool</h3>
+    return (
+        <div className='flex flex-col items-center gap-6 m-10'>
+            <div><Link to='/' className="text-[#e66] underline hover:text-[#ff7777]">Home</Link></div>
+            <h3 className="text-3xl font-bold">Transaction Pool</h3>
+            <div className="w-full max-w-4xl bg-[#333] p-6 rounded shadow-lg">
                 {
-                    Object.values(this.state.transactionPoolMap).map(transaction => {
-                        return(
-                            <div key={transaction.id}>
-                                <hr />
+                    Object.values(transactionPoolMap).map(transaction => {
+                        return (
+                            <div key={transaction.id} className="border-b border-gray-600 last:border-0 pb-4 mb-4 last:mb-0">
                                 <Transaction transaction={transaction} />
                             </div>
                         )
                     })
                 }
-                <hr />
-                <Button
-                    bsStyle="danger"
-                    onClick={this.fetchMineTransactions}
-                >
-                     Mine the Transaction
-                </Button>
+
+                {Object.values(transactionPoolMap).length === 0 && (
+                    <div className="text-gray-400 italic mb-4">No pending transactions.</div>
+                )}
+
+                <div className="pt-4 border-t border-gray-500">
+                    <button
+                        onClick={fetchMineTransactions}
+                        className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded transition-colors"
+                    >
+                        Mine the Transactions
+                    </button>
+                </div>
             </div>
-        )
-    }
+        </div>
+    )
 }
 
 export default TransactionPool;

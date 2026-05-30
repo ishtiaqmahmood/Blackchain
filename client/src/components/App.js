@@ -1,39 +1,38 @@
-import React, { Component } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from 'react-router-dom';
 import logo from '../assets/logo.png'
 
-class App extends Component {
-    state = {walletInfo: {} };
+const App = () => {
+    const [walletInfo, setWalletInfo] = useState({});
 
-    componentDidMount() {
+    useEffect(() => {
         fetch(`${document.location.origin}/api/wallet-info`)
-        .then(response => response.json())
-        .then(json => this.setState({ walletInfo: json }));
-    }
+            .then(response => response.json())
+            .then(json => setWalletInfo(json));
+    }, []);
 
+    const { address, balance } = walletInfo;
 
-    render() {
-        const { address, balance } = this.state.walletInfo;
-
-        return(
-            <div className='App'>
-                <img className="logo" src={logo}></img>
-                <br />
-                <div>
-                    Welcome to the blockchain...
-                </div>
-                <br />
-                <div><Link to='/blocks'>Blocks</Link></div>
-                <div><Link to='/conduct-transaction'>Conduct a Transaction</Link></div>
-                <div><Link to='/transaction-pool'>Transaction Pool</Link></div>
-                <br />
-                <div className='WalletInfo'>
-                    <div>Address: {address}</div>
-                    <div>Balance: {balance}</div>
-                </div>
+    return (
+        <div className="flex flex-col items-center">
+            <img className="logo" src={logo} alt="blockchain-logo" />
+            <br />
+            <div className="text-2xl">
+                Welcome to the blockchain...
             </div>
-        );
-    }
+            <br />
+            <div className="flex flex-col gap-2">
+                <div><Link to='/blocks' className="text-[#e66] underline hover:text-[#ff7777]">Blocks</Link></div>
+                <div><Link to='/conduct-transaction' className="text-[#e66] underline hover:text-[#ff7777]">Conduct a Transaction</Link></div>
+                <div><Link to='/transaction-pool' className="text-[#e66] underline hover:text-[#ff7777]">Transaction Pool</Link></div>
+            </div>
+            <br />
+            <div className="w-[500px] border border-white p-4 rounded bg-[#333]">
+                <div className="break-all">Address: {address}</div>
+                <div>Balance: {balance}</div>
+            </div>
+        </div>
+    );
 }
 
 export default App;
