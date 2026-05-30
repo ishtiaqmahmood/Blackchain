@@ -1,5 +1,5 @@
 const express = require('express');
-const request = require('request');
+const axios = require('axios');
 const bodyParser = require('body-parser');
 const path = require('path');
 const Blockchain = require('./blockchain');
@@ -84,24 +84,28 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname,'client/dist/index.html'));
 });
 
-const syncWithRootState = () => {
-  request({ url: `${ROOT_NODE_ADDRESS}/api/blocks` }, (error, response, body) => {
-    if (!error && response.statusCode === 200) {
-      const rootChain = JSON.parse(body);
-
+const syncWithRootState = async () => {
+  try {
+    const blocksResponse = await axios.get(`${ROOT_NODE_ADDRESS}/api/blocks`);
+    if (blocksResponse.status === 200) {
+      const rootChain = blocksResponse.data;
       console.log('replace chain on a sync with', rootChain);
       blockchain.replaceChain(rootChain);
     }
-  });
+  } catch (error) {
+    console.error('Error syncing blocks:', error.message);
+  }
 
-  request({ url: `${ROOT_NODE_ADDRESS}/api/transaction-pool-map` }, (error, response, body) => {
-    if (!error && response.statusCode === 200) {
-      const rootTransactionPoolMap = JSON.parse(body);
-
+  try {
+    const tpMapResponse = await axios.get(`${ROOT_NODE_ADDRESS}/api/transaction-pool-map`);
+    if (tpMapResponse.status === 200) {
+      const rootTransactionPoolMap = tpMapResponse.data;
       console.log('replace transaction pool map on a sync with', rootTransactionPoolMap);
       transactionPool.setMap(rootTransactionPoolMap);
     }
-  });
+  } catch (error) {
+    console.error('Error syncing transaction pool map:', error.message);
+  }
 };
 
 if (isDevelopment) {
@@ -139,7 +143,7 @@ if (isDevelopment) {
       walletBarAction();
     }
 
-    transactionMiner.mineTransactions();
+    // transactionMiner.mineTransactions();
   }
 }
 
@@ -149,10 +153,21 @@ if (process.env.GENERATE_PEER_PORT === 'true') {
   PEER_PORT = DEFAULT_PORT + Math.ceil(Math.random() * 1000);
 }
 const PORT = process.env.PORT || PEER_PORT || DEFAULT_PORT;
-app.listen(PORT, () => {
-  console.log(`Listening at localhost:${PORT}`);
 
-  if (PORT !== DEFAULT_PORT) {
-    syncWithRootState();
-  }
-});
+const startServer = async () => {
+  // pubsub.connect() is called asynchronously but we don't wait for it to start the server
+  // This allows the server to start even if Redis is down
+  pubsub.connect().catch(error => {
+    console.error('Initial Redis connection failed:', error.message);
+  });
+
+  app.listen(PORT, async () => {
+    console.log(`Listening at localhost:${PORT}`);
+
+    if (PORT !== DEFAULT_PORT) {
+      await syncWithRootState();
+    }
+  });
+};
+
+startServer();

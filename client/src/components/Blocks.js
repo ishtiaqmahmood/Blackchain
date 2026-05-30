@@ -1,31 +1,31 @@
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Block from './Block';
 
-class Blocks extends Component {
-    state = { blocks: [] };
+const Blocks = () => {
+    const [blocks, setBlocks] = useState([]);
 
-    componentDidMount() {
+    useEffect(() => {
         fetch(`${document.location.origin}/api/blocks`)
-        .then(response => response.json())
-        .then(json => this.setState({ blocks: json }));
-    }
+            .then(response => response.json())
+            .then(json => setBlocks(json));
+    }, []);
 
-    render() {
-        return (
-            <div>
-                <div><Link to='/'>Home</Link></div>
-                <h3>Blocks</h3>
+    return (
+        <div className="flex flex-col items-center gap-4">
+            <div><Link to='/' className="text-[#e66] underline hover:text-[#ff7777]">Home</Link></div>
+            <h3 className="text-3xl font-bold">Blocks</h3>
+            <div className="w-full max-w-4xl">
                 {
-                    this.state.blocks.map(block => {
+                    blocks.map(block => {
                         return (
                             <Block key={block.hash} block={block}/>
                         )
                     })
                 }
             </div>
-        )
-    }
+        </div>
+    )
 }
 
 export default Blocks;

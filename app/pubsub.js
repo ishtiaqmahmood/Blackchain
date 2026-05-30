@@ -7,21 +7,27 @@ const CHANNELS = {
 };
 
 class PubSub {
-  constructor({ blockchain, transactionPool }) {
+  constructor({ blockchain, transactionPool, redisUrl }) {
     this.blockchain = blockchain;
     this.transactionPool = transactionPool;
 
-    this.publisher = redis.createClient();
-    this.subscriber = redis.createClient();
+    this.publisher = redis.createClient({ url: redisUrl });
+    this.subscriber = redis.createClient({ url: redisUrl });
 
-    this.subscribeToChannels();
+    this.subscriber.on('error', (err) => console.log('Redis Subscriber Error', err));
+    this.publisher.on('error', (err) => console.log('Redis Publisher Error', err));
 
-    this.subscriber.on('message', (channel, message) => {
-      this.handleMessage(channel, message)
-    });
+    this.connected = false;
   }
 
-  handleMessage(channel, message) {
+  async connect() {
+    await this.publisher.connect();
+    await this.subscriber.connect();
+    this.connected = true;
+    await this.subscribeToChannels();
+  }
+
+  handleMessage(message, channel) {
     console.log(`Message receive. Channel: ${channel}. Message: ${message}.`);
 
     const parsedMessage = JSON.parse(message);
@@ -40,21 +46,22 @@ class PubSub {
       default:
         return; 
     }
-
   }
 
-  subscribeToChannels() {
-    Object.values(CHANNELS).forEach(channel => {
-      this.subscriber.subscribe(channel);
-    });
-  }
-
-  publish({ channel, message }) {
-    this.subscriber.unsubscribe(channel, () => {
-      this.publisher.publish(channel, message, () => {
-        this.subscriber.subscribe(channel);
+  async subscribeToChannels() {
+    for (const channel of Object.values(CHANNELS)) {
+      await this.subscriber.subscribe(channel, (message, channelName) => {
+          this.handleMessage(message, channelName);
       });
-    });
+    }
+  }
+
+  async publish({ channel, message }) {
+    if (!this.connected) {
+        console.log('Skipping publish: Not connected to Redis');
+        return;
+    }
+    await this.publisher.publish(channel, message);
   }
 
   broadcastChain() {
