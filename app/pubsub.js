@@ -11,20 +11,51 @@ class PubSub {
     this.blockchain = blockchain;
     this.transactionPool = transactionPool;
 
-    this.publisher = redis.createClient({ url: redisUrl });
-    this.subscriber = redis.createClient({ url: redisUrl });
+    const redisOptions = {
+      url: redisUrl,
+      socket: {
+        reconnectStrategy: (retries) => {
+          if (retries > 10) {
+            console.log('Redis reconnection attempts exhausted. Operating without Redis.');
+            return false; // Stop retrying
+          }
+          return Math.min(retries * 100, 3000); // Exponential backoff
+        }
+      }
+    };
 
-    this.subscriber.on('error', (err) => console.log('Redis Subscriber Error', err));
-    this.publisher.on('error', (err) => console.log('Redis Publisher Error', err));
+    this.publisher = redis.createClient(redisOptions);
+    this.subscriber = redis.createClient(redisOptions);
+
+    this.subscriber.on('error', (err) => {
+      if (!this.connected) {
+         // Quietly log only once if possible or just silence if it's the expected "no redis" case
+      } else {
+        console.log('Redis Subscriber Error', err.message);
+      }
+    });
+
+    this.publisher.on('error', (err) => {
+       if (!this.connected) {
+         // Quietly log
+      } else {
+        console.log('Redis Publisher Error', err.message);
+      }
+    });
 
     this.connected = false;
   }
 
   async connect() {
-    await this.publisher.connect();
-    await this.subscriber.connect();
-    this.connected = true;
-    await this.subscribeToChannels();
+    try {
+      await this.publisher.connect();
+      await this.subscriber.connect();
+      this.connected = true;
+      await this.subscribeToChannels();
+      console.log('Successfully connected to Redis');
+    } catch (error) {
+      console.error('Failed to connect to Redis. Running in standalone mode.');
+    }
   }
 
   handleMessage(message, channel) {
@@ -58,10 +89,14 @@ class PubSub {
 
   async publish({ channel, message }) {
     if (!this.connected) {
-        console.log('Skipping publish: Not connected to Redis');
+        // console.log('Skipping publish: Not connected to Redis');
         return;
     }
-    await this.publisher.publish(channel, message);
+    try {
+      await this.publisher.publish(channel, message);
+    } catch (error) {
+      console.error(`Failed to publish to channel ${channel}:`, error.message);
+    }
   }
 
   broadcastChain() {
